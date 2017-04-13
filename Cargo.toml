@@ -1,0 +1,11 @@
+[package]
+name = "ip-api"
+version = "0.1.0"
+authors = ["Jakub Hlusička <limeth@protonmail.com>"]
+
+[dependencies]
+hyper = { git = "https://github.com/hyperium/hyper" }
+error-chain = "0.10.0"
+serde_json = "0.9.10"
+futures = "0.1.13"
+tokio-core = "0.1.6"
