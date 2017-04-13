@@ -77,14 +77,14 @@ impl IpApi {
                     .collect()
                     .map(|vec| vec.concat())
             })
-            .map_err(|err| Error::from(err))
+            .map_err(Error::from)
             .and_then(|data| {
                 String::from_utf8(data)
-                    .map_err(|err| Error::from(err))
+                    .map_err(Error::from)
             })
             .and_then(|response_string| {
                 serde_json::from_str::<Value>(&response_string)
-                    .map_err(|err| Error::from(err))
+                    .map_err(Error::from)
             })
             .map(move |json| {
                 Response {
