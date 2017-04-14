@@ -64,9 +64,10 @@ impl IpApi {
         }
     }
 
-    pub fn request<'a>(&'a self, ip: IpAddr) -> impl Future<Item=Response, Error=Error> + 'a {
-        let ip_string = ip.to_string();
-        let uri = (&("http://ip-api.com/json/".to_owned() + &ip_string)).parse::<Uri>()
+    pub fn request<'a>(&'a self, ip: Option<IpAddr>) -> impl Future<Item=Response, Error=Error> + 'a {
+        let ip_string = ip.map(|ip| "/".to_owned() + &ip.to_string())
+            .unwrap_or("".to_owned());
+        let uri = (&("http://ip-api.com/json".to_owned() + &ip_string)).parse::<Uri>()
             .expect("Could not create the ip-api request URL.
                     \nThis is an implementation error, please report it to the authors.");
 
@@ -88,7 +89,8 @@ impl IpApi {
             })
             .map(move |json| {
                 Response {
-                    query: ip_string,
+                    query: get_string(&json, "query")
+                        .expect("The queried IP was not in the response."),
                     country: get_name_and_code(&json, "country", "countryCode"),
                     region: get_name_and_code(&json, "regionName", "region"),
                     city: get_string(&json, "city"),
@@ -168,11 +170,9 @@ mod tests {
         let mut core = Core::new().unwrap();
         let handle = core.handle();
         let ip_api = IpApi::new(handle);
-        let future = ip_api.request(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8)))
+        let future = ip_api.request(Some(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8))))
             .map(|result| {
                 assert_eq!(result, expected);
-
-                result
             });
 
         core.run(future).unwrap();
