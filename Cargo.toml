@@ -8,4 +8,6 @@ hyper = { git = "https://github.com/hyperium/hyper" }
 error-chain = "0.10.0"
 serde_json = "0.9.10"
 futures = "0.1.13"
+
+[dev-dependencies]
 tokio-core = "0.1.6"

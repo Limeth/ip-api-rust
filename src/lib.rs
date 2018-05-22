@@ -3,7 +3,6 @@ extern crate hyper;
 extern crate error_chain;
 extern crate serde_json;
 extern crate futures;
-extern crate tokio_core;
 
 use std::net::IpAddr;
 use futures::Future;
@@ -143,9 +142,11 @@ fn get_string(json: &Value, index: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    extern crate tokio_core;
+
     use super::*;
     use std::net::Ipv4Addr;
-    use tokio_core::reactor::Core;
+    use tests::tokio_core::reactor::Core;
 
     #[test]
     fn it_works() {
