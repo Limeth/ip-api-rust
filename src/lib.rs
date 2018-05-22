@@ -1,5 +1,3 @@
-#![feature(conservative_impl_trait)]
-
 extern crate hyper;
 #[macro_use]
 extern crate error_chain;
@@ -7,7 +5,6 @@ extern crate serde_json;
 extern crate futures;
 extern crate tokio_core;
 
-use tokio_core::reactor::Handle;
 use std::net::IpAddr;
 use futures::Future;
 use futures::Stream;
@@ -58,9 +55,9 @@ pub struct IpApi {
 }
 
 impl IpApi {
-    pub fn new(handle: Handle) -> Self {
+    pub fn new() -> Self {
         IpApi {
-            client: Client::new(&handle),
+            client: Client::new(),
         }
     }
 
@@ -73,7 +70,7 @@ impl IpApi {
 
         self.client.get(uri)
             .and_then(|response| {
-                response.body()
+                response.into_body()
                     .map(|chunk| chunk.to_vec())
                     .collect()
                     .map(|vec| vec.concat())
@@ -157,19 +154,18 @@ mod tests {
             country: Some(NameAndCode { name: "United States".to_owned(), code: "US".to_owned() }),
             region: Some(NameAndCode { name: "California".to_owned(), code: "CA".to_owned() }),
             city: Some("Mountain View".to_owned()),
-            zip: Some("94035".to_owned()),
-            location: Some(Coordinates { latitude: 37.386, longitude: -122.0838 }),
+            zip: Some("".to_owned()),
+            location: Some(Coordinates { latitude: 37.4229, longitude: -122.085 }),
             timezone: Some("America/Los_Angeles".to_owned()),
             isp: Some("Google".to_owned()),
             organization: Some("Google".to_owned()),
-            autonomous_system: Some("AS15169 Google Inc.".to_owned()),
+            autonomous_system: Some("AS15169 Google LLC".to_owned()),
             reverse: None,
             mobile: false,
             proxy: false
         };
         let mut core = Core::new().unwrap();
-        let handle = core.handle();
-        let ip_api = IpApi::new(handle);
+        let ip_api = IpApi::new();
         let future = ip_api.request(Some(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8))))
             .map(|result| {
                 assert_eq!(result, expected);
