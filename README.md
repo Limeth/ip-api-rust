@@ -25,3 +25,4 @@ pub struct Response {
 
 ## Requirements
 You need `tokio_core` in order to use this library, as the construction of `IpApi` requires an instance of `Handle`.
+You need Rust 1.26 or later for `impl Trait`.
