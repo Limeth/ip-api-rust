@@ -1,3 +1,36 @@
+//! An API for http://ip-api.com/ written in the Rust language.
+//!
+//! This library lets you request information about an IP address.
+//! It uses `futures` to deliver the result.
+//!
+//! You will need the `tokio_core` create in order to use this library.
+//! # Examples
+//!
+//! ```
+//! # extern crate futures;
+//! # extern crate tokio_core;
+//! # extern crate ip_api;
+//! use std::net::IpAddr;
+//! use tokio_core::reactor::Core;
+//! use futures::future::Future;
+//! use ip_api::IpApi;
+//!
+//! # #[allow(unused_variables)]
+//! # fn main() {
+//! let mut core = Core::new().unwrap();
+//! let ip_api = IpApi::new();
+//! let ip: IpAddr = "8.8.8.8".parse().unwrap();
+//! let future = ip_api.request(Some(ip))
+//!     .map(|result| {
+//!         println!("{:?}", result);
+//!     });
+//!
+//! core.run(future).unwrap();
+//! # }
+//! ```
+
+#![warn(missing_docs)]
+
 extern crate hyper;
 #[macro_use]
 extern crate error_chain;
@@ -12,54 +45,100 @@ use hyper::Uri;
 use hyper::client::HttpConnector;
 use serde_json::Value;
 
+/// The successful result of an `IpApi::request` call.
 #[derive(Debug, PartialEq)]
 pub struct Response {
+    /// IP used for the query
     pub query: String,
+    /// The country the IP is thought to be in
     pub country: Option<NameAndCode>,
+    /// The region the IP is thought to be in
     pub region: Option<NameAndCode>,
+    /// The city the IP is thought to be in
     pub city: Option<String>,
+    /// The ZIP code the IP is thought to have
     pub zip: Option<String>,
+    /// The predicted location of this IP
     pub location: Option<Coordinates>,
+    /// City timezone
     pub timezone: Option<String>,
+    /// The name of the Internet Service Provider
     pub isp: Option<String>,
+    /// The organization that is thought to own this IP.
     pub organization: Option<String>,
+    /// Autonomous system number (ASN) and name, separated by space
     pub autonomous_system: Option<String>,
+    /// Reverse DNS of the IP
     pub reverse: Option<String>,
+    /// Mobile (cellular) connection
     pub mobile: bool,
+    /// Proxy (anonymous)
     pub proxy: bool,
 }
 
+/// Used to pair an abbreviation with a name
 #[derive(Debug, PartialEq)]
 pub struct NameAndCode {
+    /// The name
     pub name: String,
+    /// The abbreviation
     pub code: String,
 }
 
+/// Used to store geographic coordinates
 #[derive(Debug, PartialEq)]
 pub struct Coordinates {
+    /// The latitude
     pub latitude: f32,
+    /// The longitude
     pub longitude: f32,
 }
 
-error_chain! {
-    foreign_links {
-        HyperError(hyper::Error);
-        SerdeJsonError(serde_json::Error);
-        FromUtf8Error(std::string::FromUtf8Error);
+#[allow(missing_docs)]
+mod error {
+    use super::*;
+
+    error_chain! {
+        foreign_links {
+            HyperError(hyper::Error);
+            SerdeJsonError(serde_json::Error);
+            FromUtf8Error(std::string::FromUtf8Error);
+        }
     }
 }
 
+pub use error::*;
+
+/// The `struct` used to request information about IP addresses.
+///
+/// # Examples
+///
+/// ```
+/// # extern crate tokio_core;
+/// # extern crate ip_api;
+/// use tokio_core::reactor::Core;
+/// use ip_api::IpApi;
+///
+/// # #[allow(unused_variables)]
+/// # fn main() {
+/// let core = Core::new().unwrap();
+/// let ip_api = IpApi::new();
+/// # }
+/// ```
 pub struct IpApi {
     client: Client<HttpConnector>,
 }
 
 impl IpApi {
+    /// Constructs a new `IpApi`.
     pub fn new() -> Self {
         IpApi {
             client: Client::new(),
         }
     }
 
+    /// Requests information about the provided IP address.
+    /// If no IP address is provided, the external IP address of the host machine is used.
     pub fn request<'a>(&'a self, ip: Option<IpAddr>) -> impl Future<Item=Response, Error=Error> + 'a {
         let ip_string = ip.map(|ip| "/".to_owned() + &ip.to_string())
             .unwrap_or("".to_owned());
@@ -145,7 +224,6 @@ mod tests {
     extern crate tokio_core;
 
     use super::*;
-    use std::net::Ipv4Addr;
     use tests::tokio_core::reactor::Core;
 
     #[test]
@@ -167,7 +245,7 @@ mod tests {
         };
         let mut core = Core::new().unwrap();
         let ip_api = IpApi::new();
-        let future = ip_api.request(Some(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8))))
+        let future = ip_api.request(Some("8.8.8.8".parse().unwrap()))
             .map(|result| {
                 assert_eq!(result, expected);
             });
